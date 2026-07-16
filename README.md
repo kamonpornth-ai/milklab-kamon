@@ -6,7 +6,7 @@ Template repo สำหรับวิชา 31-407-106-406 : AI for Solopreneur
 
 1. **Use this template** then Create a new repository (ตั้งชื่อ `milklab-<ชื่อ>`)
 2. เปิด **Codespaces** จาก repo ใหม่
-3. ตั้ง user-level Codespaces secret `GOOGLE_API_KEY` (ดู Quickstart)
+3. ตั้ง user-level Codespaces secret `GOOGLE_API_KEY` (ดู Quickstart)ี
 4. รัน `python scripts/verify_setup.py` ใน terminal
 
 ## ไฟล์หลัก
