@@ -21,8 +21,8 @@ jobs:
 
       - name: Run sales logger
         env:
-          SHEETS_CREDENTIALS: ${{ secrets.SHEETS_CREDENTIALS }}
-          SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          SHEETS_CREDENTIALS: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          SPREADSHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: python sales_logger.py
