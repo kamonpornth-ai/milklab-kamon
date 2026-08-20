@@ -7,9 +7,11 @@ Deploy: push to GitHub then Actions deploys to HuggingFace Space
 """
 
 import os
-
+import faiss
+import numpy as np
 import streamlit as st
-
+from sentence_transformers import SentenceTransformer
+from google import genai
 
 @st.cache_resource
 def load_index():
@@ -18,20 +20,46 @@ def load_index():
 
     Returns: (model, index, chunks_list)
     """
-    raise NotImplementedError("Implement in Session 3 Lab 2.2 (TODO 1-3)")
+    with open("menu_kb.md", "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    # Split into chunks (e.g. by double newline)
+    chunks_list = [chunk.strip() for chunk in content.split("\n\n") if chunk.strip()]
+    
+    # Load sentence transformer model
+    model = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
+    embeddings = model.encode(chunks_list)
+    
+    # Create Faiss index
+    dimension = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dimension)
+    index.add(np.array(embeddings).astype('float32'))
+    
+    return model, index, chunks_list
 
 
 def retrieve_top_k(query: str, model, index, chunks: list[str], k: int = 3) -> list[str]:
     """TODO 4: encode query, search index, return top-k chunks"""
-    raise NotImplementedError("Implement in Session 3 Lab 2.2 (TODO 4)")
+    query_vector = model.encode([query])
+    distances, indices = index.search(np.array(query_vector).astype('float32'), k)
+    return [chunks[i] for i in indices[0]]
 
 
 def generate_answer(query: str, context_chunks: list[str]) -> str:
-    """TODO 5: ส่ง query + context ไป Gemini, return answer
-
-    Hint: build prompt that says "ตอบจากข้อมูลต่อไปนี้เท่านั้น ถ้าไม่มีใน context ให้บอกว่าไม่รู้"
-    """
-    raise NotImplementedError("Implement in Session 3 Lab 2.2 (TODO 5)")
+    """TODO 5: ส่ง query + context ไป Gemini, return answer"""
+    context = "\n\n".join(context_chunks)
+    prompt = f"ตอบคำถามจากข้อมูลต่อไปนี้เท่านั้น ถ้าไม่มีในข้อมูลให้บอกว่าไม่รู้\n\nข้อมูล:\n{context}\n\nคำถาม: {query}"
+    
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        return "กรุณาตั้งค่า GOOGLE_API_KEY ก่อนใช้งานครับ"
+        
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    return response.text or ""
 
 
 def main():
