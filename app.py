@@ -51,7 +51,17 @@ def retrieve_top_k(query: str, model, index, chunks: list[str], k: int = 3) -> l
 def generate_answer(query: str, context_chunks: list[str]) -> str:
     """TODO 5: ส่ง query + context ไป Gemini, return answer"""
     context = "\n\n".join(context_chunks)
-    prompt = f"ตอบคำถามจากข้อมูลต่อไปนี้เท่านั้น ถ้าไม่มีในข้อมูลให้บอกว่าไม่รู้\n\nข้อมูล:\n{context}\n\nคำถาม: {query}"
+    prompt = f"""คุณคือผู้ช่วยตอบคำถามประจำร้าน MilkLab° (ร้านนมสดกลางคืน)
+จงตอบคำถามลูกค้าอย่างสุภาพ เป็นกันเอง มีหางเสียง (ครับ/ค่ะ) โดยใช้ข้อมูลจากด้านล่างนี้เท่านั้น:
+
+ข้อมูลร้าน MilkLab°:
+{context}
+
+คำถามจากลูกค้า: {query}
+
+คำแนะนำการตอบ:
+- ถ้าลูกค้าถามถึงเมนูหรือข้อมูลที่ไม่มีในร้าน ให้ตอบอย่างสุภาพว่าทางร้านไม่มีเมนูนั้น และแนะนำเมนูที่มีอยู่ในข้อมูลแทน
+- ตอบให้กระชับ ชัดเจน และน่ารักสมกับเป็นร้านนมสดกลางคืน"""
     
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
