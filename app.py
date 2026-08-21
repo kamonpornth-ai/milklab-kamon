@@ -7,9 +7,14 @@ Deploy: push to GitHub then Actions deploys to HuggingFace Space
 """
 
 import os
-
+import faiss
+import numpy as np
 import streamlit as st
+from dotenv import load_dotenv
+from sentence_transformers import SentenceTransformer
+from google import genai
 
+load_dotenv()
 
 @st.cache_resource
 def load_index():
@@ -18,20 +23,61 @@ def load_index():
 
     Returns: (model, index, chunks_list)
     """
-    raise NotImplementedError("Implement in Session 3 Lab 2.2 (TODO 1-3)")
+    with open("menu_kb.md", "r", encoding="utf-8") as f:
+        content = f.read()
+    
+    # Split into chunks (e.g. by double newline)
+    chunks_list = [chunk.strip() for chunk in content.split("\n\n") if chunk.strip()]
+    
+    # Load sentence transformer model
+    model = SentenceTransformer("paraphrase-multilingual-mpnet-base-v2")
+    embeddings = model.encode(chunks_list)
+    
+    # Create Faiss index
+    dimension = embeddings.shape[1]
+    index = faiss.IndexFlatL2(dimension)
+    index.add(np.array(embeddings).astype('float32'))
+    
+    return model, index, chunks_list
 
 
 def retrieve_top_k(query: str, model, index, chunks: list[str], k: int = 3) -> list[str]:
     """TODO 4: encode query, search index, return top-k chunks"""
-    raise NotImplementedError("Implement in Session 3 Lab 2.2 (TODO 4)")
+    query_vector = model.encode([query])
+    distances, indices = index.search(np.array(query_vector).astype('float32'), k)
+    return [chunks[i] for i in indices[0]]
 
 
 def generate_answer(query: str, context_chunks: list[str]) -> str:
-    """TODO 5: ส่ง query + context ไป Gemini, return answer
+    """TODO 5: ส่ง query + context ไป Gemini, return answer"""
+    context = "\n\n".join(context_chunks)
+    prompt = f"""คุณคือผู้ช่วยตอบคำถามประจำร้าน MilkLab° (ร้านนมสดกลางคืน)
+จงตอบคำถามลูกค้าอย่างสุภาพ เป็นกันเอง มีหางเสียง (ครับ/ค่ะ) โดยใช้ข้อมูลจากด้านล่างนี้เท่านั้น:
 
-    Hint: build prompt that says "ตอบจากข้อมูลต่อไปนี้เท่านั้น ถ้าไม่มีใน context ให้บอกว่าไม่รู้"
-    """
-    raise NotImplementedError("Implement in Session 3 Lab 2.2 (TODO 5)")
+ข้อมูลร้าน MilkLab°:
+{context}
+
+คำถามจากลูกค้า: {query}
+
+คำแนะนำการตอบ:
+- ถ้าลูกค้าถามถึงเมนูหรือข้อมูลที่ไม่มีในร้าน ให้ตอบอย่างสุภาพว่าทางร้านไม่มีเมนูนั้น และแนะนำเมนูที่มีอยู่ในข้อมูลแทน
+- ตอบให้กระชับ ชัดเจน และน่ารักสมกับเป็นร้านนมสดกลางคืน"""
+    
+    api_key = os.environ.get("GOOGLE_API_KEY")
+    if not api_key:
+        try:
+            api_key = st.secrets["GOOGLE_API_KEY"]
+        except Exception:
+            pass
+    if not api_key:
+        return "⚠️ กรุณาตั้งค่า GOOGLE_API_KEY ใน .env หรือใน Space Settings (Secrets) ก่อนใช้งานครับ"
+        
+    client = genai.Client(api_key=api_key)
+    response = client.models.generate_content(
+        model="gemini-3.6-flash",
+        contents=prompt
+    )
+    return response.text or ""
 
 
 def main():
