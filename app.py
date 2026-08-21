@@ -64,7 +64,7 @@ def generate_answer(query: str, context_chunks: list[str]) -> str:
         
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
+        model="gemini-3.6-flash",
         contents=prompt
     )
     return response.text or ""
