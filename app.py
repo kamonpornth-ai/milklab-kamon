@@ -10,8 +10,11 @@ import os
 import faiss
 import numpy as np
 import streamlit as st
+from dotenv import load_dotenv
 from sentence_transformers import SentenceTransformer
 from google import genai
+
+load_dotenv()
 
 @st.cache_resource
 def load_index():
@@ -52,7 +55,12 @@ def generate_answer(query: str, context_chunks: list[str]) -> str:
     
     api_key = os.environ.get("GOOGLE_API_KEY")
     if not api_key:
-        return "กรุณาตั้งค่า GOOGLE_API_KEY ก่อนใช้งานครับ"
+        try:
+            api_key = st.secrets["GOOGLE_API_KEY"]
+        except Exception:
+            pass
+    if not api_key:
+        return "⚠️ กรุณาตั้งค่า GOOGLE_API_KEY ใน .env หรือใน Space Settings (Secrets) ก่อนใช้งานครับ"
         
     client = genai.Client(api_key=api_key)
     response = client.models.generate_content(
